@@ -2,9 +2,6 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in menubot.gemspec
-gemspec
-
 gem "i18n"
 gem "mailgun-ruby"
 gem "pdf-reader", "~> 2.12.0"
