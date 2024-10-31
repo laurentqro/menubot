@@ -1,10 +1,5 @@
 #!/usr/bin/env ruby
 
-require "i18n"
-require "pdf-reader"
-require "openai"
-require "mailgun-ruby"
-
 require_relative "../lib/menubot"
 
 Menubot.run

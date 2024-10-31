@@ -1,5 +1,15 @@
 # frozen_string_literal: true
 
+require 'active_support'
+require 'active_support/core_ext/date'
+require 'active_support/core_ext/time'
+require 'date'
+require "httparty"
+require "i18n"
+require "mailgun-ruby"
+require "openai"
+require "pdf-reader"
+
 require_relative "menubot/version"
 require_relative "tracker"
 
@@ -24,12 +34,32 @@ module Menubot
     raise Menubot::Error, "Menubot has already run today" if Menubot::Tracker.already_run_today?  
     raise Menubot::Error, "Nursery is closed today"       if Menubot.nursery_closed_today?
 
+    if !File.exist?("data/menus.pdf") || Menubot.first_monday_of_month?
+      Menubot.fetch_menus_for_the_month
+    end
+
     send_email(
       subject: "🍽️ Menu pour le #{todays_date}",
       body: Menubot.extract_menu_of_the_day_from_pdf("data/menus.pdf", todays_date)
     )
 
     Menubot::Tracker.mark_run
+  end
+
+  def self.fetch_menus_for_the_month
+    response = HTTParty.get(ENV.fetch("MENU_URL"))
+    
+    raise Menubot::Error, "Failed to fetch PDF (Status: #{response.code})" unless response.success?
+    raise Menubot::Error, "Response is empty" if response.body.nil? || response.body.empty?
+    raise Menubot::Error, "Content-Type is not PDF" unless response.headers['content-type']&.include?('pdf')
+
+    FileUtils.mkdir_p('data') unless Dir.exist?('data')
+    File.write("data/menus.pdf", response.body)
+
+  rescue HTTParty::Error => e
+    raise Menubot::Error, "HTTP request failed: #{e.message}"
+  rescue StandardError => e
+    raise Menubot::Error, "Failed to save PDF: #{e.message}"
   end
 
   def self.extract_menu_of_the_day_from_pdf(pdf_path, date)
@@ -97,6 +127,10 @@ module Menubot
 
   def self.weekend?
     Date.today.saturday? || Date.today.sunday?
+  end
+
+  def self.first_monday_of_month?(date = Date.today)
+    date.monday? && date == date.beginning_of_month.next_week(:monday)
   end
 
   def self.holidays
