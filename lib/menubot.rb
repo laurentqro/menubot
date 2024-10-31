@@ -23,7 +23,7 @@ I18n.backend.store_translations :fr, {
 module Menubot
   class Error < StandardError; end
 
-  def self.closed_days
+  def self.holidays
     [
       "29 mars", 
       "1 avril", 
@@ -94,7 +94,7 @@ def client
 end
 
 def todays_date
-  I18n.l(Date.today + 2, format: :long, locale: :fr)
+  I18n.l(Date.today, format: :long, locale: :fr)
 end
 
 def send_email(subject:, body:)
@@ -112,9 +112,17 @@ def send_email(subject:, body:)
 end
 
 def nursery_closed_today?
-  Menubot.closed_days.include?(
+  weekend? || holiday?
+end
+
+def holiday?
+  Menubot.holidays.include?(
     I18n.l(Date.today, format: :short, locale: :fr)
   )
+end
+
+def weekend?
+  Date.today.saturday? || Date.today.sunday?
 end
 
 return if nursery_closed_today?
