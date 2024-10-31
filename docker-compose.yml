@@ -1,6 +1,7 @@
 services:
   menubot:
     build: .
+    rm: true
     env_file:
       - .env
     volumes:
