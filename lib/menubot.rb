@@ -67,12 +67,24 @@ module Menubot
     pdf_content = reader.pages.map(&:text).join("\n")
 
     prompt = <<~PROMPT
-    Le texte ci-dessous provient d'un PDF qui inclut les menus pour chaque jour de la semaine. Je souhaite extraire le menu pour une date précise. La date d’aujourd’hui est "#{date}", et j’ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date. Merci d'illustrer chaque en-tête de section avec un emoji correspondant :
+    Le texte ci-dessous provient d'un PDF qui inclut les menus pour chaque jour de la semaine.
+    Le PDF contient une page par semaine du mois. Sur chaque page, les menus sont séparés verticalement par des en-têtes de section. Chaque colonne contient le menu pour un jour de la semaine.
+    Chaque en-tête de section est le jour de la semaine, écrit en majuscules et en gras.
+    Les en-têtes horizontaux sont les repas de la journée : "COLLATION DU MATIN", "DEJEUNER", "COLLATION DE L'APRES-MIDI".
+
+    Je souhaite extraire le menu pour une date précise.
+
+    Par exemple, si nous sommes le mercredi 3 novembre 2024, vas voir la page 1 du PDF (car c'est la semaine 1 du mois), trouve l'en-tête de section "MERCREDI" et copie le contenu du menu pour ce jour.
+
+    La date d’aujourd’hui est "#{date}", et j’ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date.
+
+    Merci d'illustrer chaque en-tête de section avec un emoji correspondant :
+
     - 🥖 pour la collation du matin
     - 🍽️ pour le déjeuner
     - 🍎 pour les collation de l'après-midi
 
-    Merci de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi) et de fournir uniquement les éléments pertinents pour le #{date}.
+    Merci de me donner le menu du jour, en veillant bien de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi). Fournis uniquement les éléments pertinents pour le #{date}.
 
     Voici le contenu du PDF :
 
@@ -81,12 +93,12 @@ module Menubot
 
     response = client.chat(
       parameters: {
-        model: "gpt-4o",
+        model: "gpt-4",
         messages: [
           { role: "system", content: "Tu es un assistant qui extrait le menu du jour à partir d'un PDF" },
           { role: "user", content: prompt },
         ],
-        temperature: 0.5
+        temperature: 0.3
       }
     )
 
