@@ -99,7 +99,7 @@ module Menubot
 
     response = ai_client.chat(
       parameters: {
-        model: "gpt-4",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: "Tu es un assistant qui extrait le menu du jour à partir d'un PDF" },
           { role: "user", content: prompt },
