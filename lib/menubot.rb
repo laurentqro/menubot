@@ -46,9 +46,11 @@ module Menubot
     Menubot::Tracker.mark_run
   end
 
+  # private
+
   def self.fetch_menus_for_the_month
     response = HTTParty.get(ENV.fetch("MENU_URL"))
-    
+
     raise Menubot::Error, "Failed to fetch PDF (Status: #{response.code})" unless response.success?
     raise Menubot::Error, "Response is empty" if response.body.nil? || response.body.empty?
     raise Menubot::Error, "Content-Type is not PDF" unless response.headers['content-type']&.include?('pdf')
@@ -67,31 +69,35 @@ module Menubot
     pdf_content = reader.pages.map(&:text).join("\n")
 
     prompt = <<~PROMPT
-    Le texte ci-dessous provient d'un PDF qui inclut les menus pour chaque jour de la semaine.
-    Le PDF contient une page par semaine du mois. Sur chaque page, les menus sont séparés verticalement par des en-têtes de section. Chaque colonne contient le menu pour un jour de la semaine.
-    Chaque en-tête de section est le jour de la semaine, écrit en majuscules et en gras.
-    Les en-têtes horizontaux sont les repas de la journée : "COLLATION DU MATIN", "DEJEUNER", "COLLATION DE L'APRES-MIDI".
+      Le texte ci-dessous provient d'un PDF qui inclut les menus pour chaque jour de la semaine.
 
-    Je souhaite extraire le menu pour une date précise.
+      Le PDF contient une page par semaine du mois. Sur chaque page, les menus sont séparés verticalement par des en-têtes de section. Chaque colonne contient le menu pour un jour de la semaine.
+      Chaque en-tête de section est le jour de la semaine, écrit en majuscules et en gras.
 
-    Par exemple, si nous sommes le mercredi 3 novembre 2024, vas voir la page 1 du PDF (car c'est la semaine 1 du mois), trouve l'en-tête de section "MERCREDI" et copie le contenu du menu pour ce jour.
+      Les en-têtes horizontaux sont les repas de la journée : "COLLATION DU MATIN", "DEJEUNER", "COLLATION DE L'APRES-MIDI".
 
-    La date d’aujourd’hui est "#{date}", et j’ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date.
+      Je souhaite extraire le menu pour une date précise.
 
-    Merci d'illustrer chaque en-tête de section avec un emoji correspondant :
+      Par exemple, si nous sommes le mercredi 3 novembre 2024, vas voir la page 1 du PDF (car c'est la semaine 1 du mois), trouve l'en-tête de section "MERCREDI" et copie le contenu du menu pour ce jour.
 
-    - 🥖 pour la collation du matin
-    - 🍽️ pour le déjeuner
-    - 🍎 pour les collation de l'après-midi
+      La date d'aujourd'hui est "#{date}", et j'ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date.
 
-    Merci de me donner le menu du jour, en veillant bien de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi). Fournis uniquement les éléments pertinents pour le #{date}.
+      Merci d'illustrer chaque en-tête de section avec un emoji correspondant :
 
-    Voici le contenu du PDF :
+      - 🥖 pour la collation du matin
+      - 🍽️ pour le déjeuner
+      - 🍎 pour les collation de l'après-midi
 
-    #{pdf_content}
+      Merci de me donner le menu du jour, en veillant bien de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi). Fournis uniquement les éléments pertinents pour le #{date}.
+
+      #{Menubot.first_day_of_month_warning}
+
+      Voici le contenu du PDF :
+
+      #{pdf_content}
     PROMPT
 
-    response = client.chat(
+    response = ai_client.chat(
       parameters: {
         model: "gpt-4",
         messages: [
@@ -105,7 +111,7 @@ module Menubot
     response.dig("choices", 0, "message", "content")
   end
 
-  def self.client
+  def self.ai_client
     OpenAI::Client.new(access_token: ENV.fetch("OPENAI_API_KEY"))
   end
 
@@ -148,7 +154,6 @@ module Menubot
   def self.holidays
     [
       "29 mars", 
-      "1 avril", 
       "1 mai",
       "2 mai",
       "10 mai",
@@ -177,5 +182,13 @@ module Menubot
       "4 janvier",
       "5 janvier"
     ]
+  end
+
+  def self.first_day_of_month_warning
+    "Attention, nous sommes le premier jour du mois. Le menu du jour se trouve sur la premiere page."
+  end
+
+  def self.first_day_of_month?
+    Date.today == Date.today.beginning_of_month
   end
 end
