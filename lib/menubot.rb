@@ -135,37 +135,17 @@ module Menubot
 
   def self.holidays
     [
-      "29 mars", 
       "1 mai",
-      "2 mai",
-      "10 mai",
-      "20 mai",
+      "22 mai",
       "23 mai",
-      "24 mai",
-      "30 mai",
-      "15 août",
-      "2 septembre",
-      "3 septembre",
-      "1 novembre",
-      "19 novembre",
-      "9 décembre",
-      "23 décembre",
-      "24 décembre",
-      "25 décembre",
-      "26 décembre",
-      "27 décembre",
-      "28 décembre",
-      "29 décembre",
-      "30 décembre",
-      "31 décembre",
-      "1 janvier",
-      "2 janvier",
-      "3 janvier",
-      "4 janvier",
-      "5 janvier"
+      "29 mai",
+      "9 juin",
+      "19 juin",
+      "20 juin",
+      "15 août"
     ]
   end
-
+end
   def self.first_day_of_month_warning
     "Attention, nous sommes le premier jour du mois. Le menu du jour se trouve sur la premiere page."
   end
