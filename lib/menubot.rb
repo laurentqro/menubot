@@ -4,14 +4,18 @@ require 'active_support'
 require 'active_support/core_ext/date'
 require 'active_support/core_ext/time'
 require 'date'
-require "httparty"
 require "i18n"
 require "mailgun-ruby"
-require "openai"
-require "pdf-reader"
+require "ruby_llm"
 
 require_relative "menubot/version"
 require_relative "tracker"
+
+RubyLLM.configure do |config|
+  config.openai_api_key = ENV.fetch("OPENAI_API_KEY", nil)
+  config.anthropic_api_key = ENV.fetch("ANTHROPIC_API_KEY", nil)
+  config.default_model = "claude-3-7-sonnet"
+end
 
 # Add this configuration for French locale
 I18n.available_locales = [:fr]
@@ -22,8 +26,29 @@ I18n.backend.store_translations :fr, {
       long: "%A %-d %B %Y",
       short: "%-d %B"
     },
-    month_names: [nil, "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
-    day_names: ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"]
+    month_names: [
+      nil,
+      "janvier",
+      "février",
+      "mars",
+      "avril",
+      "mai",
+      "juin",
+      "juillet",
+      "août",
+      "septembre",
+      "octobre",
+      "novembre",
+      "décembre"
+    ],
+    day_names: [
+      "dimanche",
+      "lundi",
+      "mardi",
+      "mercredi",
+      "jeudi",
+      "vendredi",
+      "samedi"]
   }
 }
 
@@ -34,13 +59,11 @@ module Menubot
     raise Menubot::Error, "Menubot has already run today" if Menubot::Tracker.already_run_today?  
     raise Menubot::Error, "Nursery is closed today"       if Menubot.nursery_closed_today?
 
-    if !File.exist?("data/menus.pdf") || Menubot.first_monday_of_month?
-      Menubot.fetch_menus_for_the_month
-    end
+    todays_date = I18n.l(Date.today, format: :long, locale: :fr)
 
     send_email(
       subject: "🍽️ Menu pour le #{todays_date}",
-      body: Menubot.extract_menu_of_the_day_from_pdf("data/menus.pdf", todays_date)
+      body: Menubot.get_menu_of_the_day(todays_date)
     )
 
     Menubot::Tracker.mark_run
@@ -48,28 +71,9 @@ module Menubot
 
   # private
 
-  def self.fetch_menus_for_the_month
-    response = HTTParty.get(ENV.fetch("MENU_URL"))
-
-    raise Menubot::Error, "Failed to fetch PDF (Status: #{response.code})" unless response.success?
-    raise Menubot::Error, "Response is empty" if response.body.nil? || response.body.empty?
-    raise Menubot::Error, "Content-Type is not PDF" unless response.headers['content-type']&.include?('pdf')
-
-    FileUtils.mkdir_p('data') unless Dir.exist?('data')
-    File.write("data/menus.pdf", response.body)
-
-  rescue HTTParty::Error => e
-    raise Menubot::Error, "HTTP request failed: #{e.message}"
-  rescue StandardError => e
-    raise Menubot::Error, "Failed to save PDF: #{e.message}"
-  end
-
-  def self.extract_menu_of_the_day_from_pdf(pdf_path, date)
-    reader = PDF::Reader.new(pdf_path)
-    pdf_content = reader.pages.map(&:text).join("\n")
-
+  def self.get_menu_of_the_day(date_in_words)
     prompt = <<~PROMPT
-      Le texte ci-dessous provient d'un PDF qui inclut les menus pour chaque jour de la semaine.
+      Le texte ci-joint provient d'un PDF qui inclut les menus pour chaque jour de la semaine.
 
       Le PDF contient une page par semaine du mois. Sur chaque page, les menus sont séparés verticalement par des en-têtes de section. Chaque colonne contient le menu pour un jour de la semaine.
       Chaque en-tête de section est le jour de la semaine, écrit en majuscules et en gras.
@@ -80,7 +84,7 @@ module Menubot
 
       Par exemple, si nous sommes le mercredi 3 novembre 2024, vas voir la page 1 du PDF (car c'est la semaine 1 du mois), trouve l'en-tête de section "MERCREDI" et copie le contenu du menu pour ce jour.
 
-      La date d'aujourd'hui est "#{date}", et j'ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date.
+      La date d'aujourd'hui est "#{date_in_words}", et j'ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date.
 
       Merci d'illustrer chaque en-tête de section avec un emoji correspondant :
 
@@ -88,31 +92,13 @@ module Menubot
       - 🍽️ pour le déjeuner
       - 🍎 pour les collation de l'après-midi
 
-      Merci de me donner le menu du jour, en veillant bien de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi). Fournis uniquement les éléments pertinents pour le #{date}.
-
-      #{Menubot.first_day_of_month_warning}
-
-      Voici le contenu du PDF :
-
-      #{pdf_content}
+      Merci de me donner le menu du jour, en veillant bien de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi). Fournis uniquement les éléments pertinents pour le #{date_in_words}.
     PROMPT
 
-    response = ai_client.chat(
-      parameters: {
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "Tu es un assistant qui extrait le menu du jour à partir d'un PDF" },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3
-      }
-    )
-
-    response.dig("choices", 0, "message", "content")
-  end
-
-  def self.ai_client
-    OpenAI::Client.new(access_token: ENV.fetch("OPENAI_API_KEY"))
+    chat = RubyLLM.chat.with_temperature(0.0)
+    chat.with_instructions("Tu es un assistant qui extrait le menu du jour à partir d'un PDF. Ne réponds pas à la question, juste retourne le menu. Formatte le menu en texte, pas en markdown.")
+    response = chat.ask(prompt, with: { pdf: "data/menus.pdf" })
+    response.content
   end
 
   def self.send_email(subject:, body:)
@@ -127,10 +113,6 @@ module Menubot
     }
 
     mailgun.send_message(mailgun_domain, message_params)
-  end
-
-  def self.todays_date
-    I18n.l(Date.today, format: :long, locale: :fr)
   end
 
   def self.nursery_closed_today?
