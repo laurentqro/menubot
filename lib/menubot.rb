@@ -129,10 +129,6 @@ module Menubot
     Date.today.saturday? || Date.today.sunday?
   end
 
-  def self.first_monday_of_month?(date = Date.today)
-    date.monday? && date == date.beginning_of_month.next_week(:monday)
-  end
-
   def self.holidays
     [
       "1 mai",
@@ -144,13 +140,5 @@ module Menubot
       "20 juin",
       "15 août"
     ]
-  end
-end
-  def self.first_day_of_month_warning
-    "Attention, nous sommes le premier jour du mois. Le menu du jour se trouve sur la premiere page."
-  end
-
-  def self.first_day_of_month?
-    Date.today == Date.today.beginning_of_month
   end
 end
