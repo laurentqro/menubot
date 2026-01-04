@@ -4,37 +4,37 @@ require_relative "test_helper"
 
 class MenubotHolidaysTest < Minitest::Test
   def test_holidays_returns_array
-    assert_kind_of Array, Menubot.holidays
+    assert_kind_of Array, Menubot::Config.holidays
   end
 
   def test_holidays_includes_christmas_break
-    holidays = Menubot.holidays
+    holidays = Menubot::Config.holidays
     assert_includes holidays, "25 décembre"
     assert_includes holidays, "1 janvier"
   end
 
   def test_holidays_includes_winter_break
-    holidays = Menubot.holidays
+    holidays = Menubot::Config.holidays
     assert_includes holidays, "13 février"
     assert_includes holidays, "28 février"
   end
 
   def test_holidays_includes_easter_monday
-    assert_includes Menubot.holidays, "6 avril"
+    assert_includes Menubot::Config.holidays, "6 avril"
   end
 
   def test_holidays_includes_spring_break
-    holidays = Menubot.holidays
+    holidays = Menubot::Config.holidays
     assert_includes holidays, "10 avril"
     assert_includes holidays, "27 avril"
   end
 
   def test_holidays_includes_labor_day
-    assert_includes Menubot.holidays, "1 mai"
+    assert_includes Menubot::Config.holidays, "1 mai"
   end
 
   def test_holidays_includes_corpus_christi_and_f1
-    holidays = Menubot.holidays
+    holidays = Menubot::Config.holidays
     assert_includes holidays, "3 juin"
     assert_includes holidays, "8 juin"
   end

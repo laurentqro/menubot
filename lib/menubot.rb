@@ -11,12 +11,13 @@ require "nokogiri"
 require "open-uri"
 
 require_relative "menubot/version"
+require_relative "menubot/config"
 require_relative "tracker"
 
 RubyLLM.configure do |config|
   config.openai_api_key = ENV.fetch("OPENAI_API_KEY", nil)
   config.anthropic_api_key = ENV.fetch("ANTHROPIC_API_KEY", nil)
-  config.default_model = "claude-sonnet-4-5-20250929"
+  config.default_model = Menubot::Config.llm_model
 end
 
 # Add this configuration for French locale
@@ -67,32 +68,28 @@ module Menubot
     menu = get_menu_of_the_day(todays_date)
 
     body = if menu.include?("MENU_NOT_FOUND")
-             "Le menu du jour n'est pas encore disponible sur le site de l'école.\n\nNous réessaierons demain !"
+             Config.not_available_message
            else
              menu
            end
 
-    send_email(
-      subject: "🍽️ Menu du #{todays_date} (Parc, Carmes et Stella)",
-      body: body
-    )
+    subject = Config.email_subject_template % { date: todays_date, school_name: Config.school_name }
+
+    send_email(subject: subject, body: body)
 
     Menubot::Tracker.mark_run
   end
 
   def self.fetch_latest_menu
-    base_url = "https://ecole-carmes.gouv.mc"
-    page_url = "#{base_url}/vie-de-l-etablissement/menus-du-restaurant-scolaire"
-
-    doc = Nokogiri::HTML(URI.open(page_url))
+    doc = Nokogiri::HTML(URI.open(Config.menu_page_url))
     pdf_link = doc.css('a[href*=".pdf"]').first
 
     return false unless pdf_link
 
-    pdf_url = "#{base_url}#{pdf_link['href']}"
+    pdf_url = "#{Config.school_website}#{pdf_link['href']}"
     pdf_content = URI.open(pdf_url).read
 
-    File.binwrite("data/menus.pdf", pdf_content)
+    File.binwrite(Config.menu_pdf_path, pdf_content)
     true
   rescue StandardError => e
     warn "Failed to fetch menu: #{e.message}"
@@ -125,12 +122,12 @@ module Menubot
 
     chat = RubyLLM.chat.with_temperature(0.0)
     chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté ou MENU_NOT_FOUND si la date n'est pas présente.")
-    response = chat.ask(prompt, with: "data/menus.pdf")
+    response = chat.ask(prompt, with: Config.menu_pdf_path)
     response.content
   end
 
   def self.send_email(subject:, body:)
-    mailgun = Mailgun::Client.new(ENV.fetch("MAILGUN_API_KEY"), "api.eu.mailgun.net")
+    mailgun = Mailgun::Client.new(ENV.fetch("MAILGUN_API_KEY"), Config.mailgun_region)
     mailgun_domain = ENV.fetch("MAILGUN_DOMAIN")
 
     message_params = {
@@ -148,43 +145,12 @@ module Menubot
   end
 
   def self.holiday?
-    Menubot.holidays.include?(
+    Config.holidays.include?(
       I18n.l(Date.today, format: :short, locale: :fr)
     )
   end
 
   def self.weekend?
     Date.today.saturday? || Date.today.sunday?
-  end
-
-  def self.holidays
-    [
-      # Vacances de Noël (19 déc 2025 - 5 jan 2026)
-      "19 décembre", "20 décembre", "21 décembre", "22 décembre", "23 décembre",
-      "24 décembre", "25 décembre", "26 décembre", "27 décembre", "28 décembre",
-      "29 décembre", "30 décembre", "31 décembre",
-      "1 janvier", "2 janvier", "3 janvier", "4 janvier", "5 janvier",
-
-      # Vacances d'hiver (13 fév - 2 mar 2026)
-      "13 février", "14 février", "15 février", "16 février", "17 février",
-      "18 février", "19 février", "20 février", "21 février", "22 février",
-      "23 février", "24 février", "25 février", "26 février", "27 février",
-      "28 février", "1 mars", "2 mars",
-
-      # Lundi de Pâques
-      "6 avril",
-
-      # Vacances de printemps (10-27 avril 2026)
-      "10 avril", "11 avril", "12 avril", "13 avril", "14 avril",
-      "15 avril", "16 avril", "17 avril", "18 avril", "19 avril",
-      "20 avril", "21 avril", "22 avril", "23 avril", "24 avril",
-      "25 avril", "26 avril", "27 avril",
-
-      # Fête du travail
-      "1 mai",
-
-      # Fête-Dieu & Grand Prix F1 (3-8 juin 2026)
-      "3 juin", "4 juin", "5 juin", "6 juin", "7 juin", "8 juin"
-    ]
   end
 end
