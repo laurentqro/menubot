@@ -10,3 +10,13 @@
 
 # rspec failure tracking
 .rspec_status
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Runtime data
+data/menus.pdf
+data/last_run.json
