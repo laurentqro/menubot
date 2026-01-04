@@ -12,6 +12,7 @@ require "open-uri"
 
 require_relative "menubot/version"
 require_relative "menubot/config"
+require_relative "menubot/menu_cache"
 require_relative "tracker"
 
 RubyLLM.configure do |config|
@@ -148,14 +149,26 @@ module Menubot
   end
 
   def self.get_menu_of_the_day(date)
+    pdf_path = Config.menu_pdf_path
+
+    # Check cache first
+    cached = MenuCache.get(date, pdf_path)
+    return cached if cached
+
+    # Extract from PDF using LLM
     date_in_words = I18n.l(date, format: :long, locale: :fr)
     short_date = date.strftime("%d/%m")
     prompt = build_prompt(date_in_words, short_date)
 
     chat = RubyLLM.chat.with_temperature(0.0)
     chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté ou MENU_NOT_FOUND si la date n'est pas présente.")
-    response = chat.ask(prompt, with: Config.menu_pdf_path)
-    response.content
+    response = chat.ask(prompt, with: pdf_path)
+    menu = response.content
+
+    # Cache the result (including MENU_NOT_FOUND to avoid repeated lookups)
+    MenuCache.set(date, pdf_path, menu)
+
+    menu
   end
 
   def self.send_email(subject:, body:)

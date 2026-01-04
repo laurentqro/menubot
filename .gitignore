@@ -20,3 +20,4 @@
 # Runtime data
 data/menus.pdf
 data/last_run.json
+data/menu_cache.json
