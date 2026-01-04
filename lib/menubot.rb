@@ -58,16 +58,23 @@ module Menubot
   class Error < StandardError; end
 
   def self.run
-    raise Menubot::Error, "Menubot has already run today" if Menubot::Tracker.already_run_today?  
-    raise Menubot::Error, "Nursery is closed today"       if Menubot.nursery_closed_today?
+    raise Menubot::Error, "Menubot has already run today" if Menubot::Tracker.already_run_today?
+    raise Menubot::Error, "Nursery is closed today" if Menubot.nursery_closed_today?
 
-    Menubot.fetch_latest_menu
+    fetch_latest_menu
 
-    todays_date = I18n.l(Date.parse("2025-12-05"), format: :long, locale: :fr)
+    todays_date = I18n.l(Date.today, format: :long, locale: :fr)
+    menu = get_menu_of_the_day(todays_date)
+
+    body = if menu.include?("MENU_NOT_FOUND")
+             "Le menu du jour n'est pas encore disponible sur le site de l'école.\n\nNous réessaierons demain !"
+           else
+             menu
+           end
 
     send_email(
       subject: "🍽️ Menu du #{todays_date} (Parc, Carmes et Stella)",
-      body: Menubot.get_menu_of_the_day(todays_date)
+      body: body
     )
 
     Menubot::Tracker.mark_run
@@ -98,7 +105,9 @@ module Menubot
     prompt = <<~PROMPT
       Extrais le menu du déjeuner pour le #{date_in_words}.
 
-      Formate la réponse exactement comme suit, avec les emojis en début de section :
+      Si le menu pour cette date n'est pas dans le PDF, réponds exactement : "MENU_NOT_FOUND"
+
+      Sinon, formate la réponse exactement comme suit :
 
       🥗 ENTRÉE
       [entrée du jour]
@@ -115,7 +124,7 @@ module Menubot
     PROMPT
 
     chat = RubyLLM.chat.with_temperature(0.0)
-    chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté, sans commentaire.")
+    chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté ou MENU_NOT_FOUND si la date n'est pas présente.")
     response = chat.ask(prompt, with: "data/menus.pdf")
     response.content
   end
