@@ -1,39 +1,111 @@
 # Menubot
 
-TODO: Delete this and the text below, and describe your gem
+Daily school menu notifier for Monaco nurseries. Fetches the weekly menu PDF from the school website, extracts the day's menu using AI, and sends it via email.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/menubot`. To experiment with that code, run `bin/console` for an interactive prompt.
+## Features
 
-## Installation
+- Automatic PDF fetching from school website
+- AI-powered menu extraction (Claude)
+- Email delivery via Mailgun
+- Menu caching (avoids repeated API calls)
+- Holiday and weekend detection
+- Docker-based scheduling
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+## Quick Start
 
-Install the gem and add to the application's Gemfile by executing:
+### Prerequisites
+
+- Ruby 3.2+ (for local development)
+- Docker (for production deployment)
+- Anthropic API key
+- Mailgun account
+
+### Environment Variables
+
+Create a `.env` file:
 
 ```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+ANTHROPIC_API_KEY=sk-ant-...
+MAILGUN_API_KEY=...
+MAILGUN_DOMAIN=mg.yourdomain.com
+FROM_EMAIL=menubot@yourdomain.com
+TO_EMAIL=parent@example.com
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+## CLI Usage
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+# Preview today's menu
+bin/menubot preview
+
+# Preview a specific date
+bin/menubot preview --date 2025-12-05
+
+# Send today's menu email
+bin/menubot run
+
+# Fetch latest PDF only
+bin/menubot fetch
+
+# Show help
+bin/menubot --help
 ```
 
-## Usage
+## Docker Deployment
 
-TODO: Write usage instructions here
+The recommended way to run menubot in production:
+
+```bash
+# Start (runs daily at 7 AM Paris time, Mon-Fri)
+docker compose up -d
+
+# Watch logs
+docker compose logs -f
+
+# Manual preview
+docker compose run --rm --entrypoint /app/bin/menubot menubot preview
+
+# Manual run
+docker compose run --rm --entrypoint /app/bin/menubot menubot run
+
+# Stop
+docker compose down
+```
+
+The container uses [supercronic](https://github.com/aptible/supercronic) for scheduling and automatically restarts on server reboot.
+
+## Configuration
+
+Edit `config.yml` to customize:
+
+- School name and website
+- Email subject template
+- Holiday dates
+- LLM model
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```bash
+# Install dependencies
+bundle install
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+# Run tests
+bundle exec ruby -Ilib:test -e "Dir.glob('test/**/*_test.rb').each { |f| require File.expand_path(f) }"
 
-## Contributing
+# Build Docker image
+docker compose build
+```
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/menubot.
+## How It Works
+
+1. Fetches the menu PDF from the school website
+2. Checks cache for previously extracted menus
+3. If not cached, sends PDF to Claude for extraction
+4. Caches the result (keyed by PDF checksum + date)
+5. Sends formatted email via Mailgun
+
+The cache automatically invalidates when the school uploads a new PDF.
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+MIT
