@@ -50,8 +50,7 @@ GEM
       zeitwerk
     marcel (1.1.0)
     mini_mime (1.1.5)
-    minitest (6.0.1)
-      prism (~> 1.5)
+    minitest (5.27.0)
     multi_xml (0.8.0)
       bigdecimal (>= 3.1, < 5)
     multipart-post (2.4.1)
@@ -63,7 +62,6 @@ GEM
       hashery (~> 2.0)
       ruby-rc4
       ttfunk
-    prism (1.7.0)
     rake (13.3.1)
     rspec (3.13.2)
       rspec-core (~> 3.13.0)
@@ -107,6 +105,7 @@ DEPENDENCIES
   httparty
   i18n
   mailgun-ruby
+  minitest (~> 5.0)
   pdf-reader (~> 2.12.0)
   rake (~> 13.0)
   rspec (~> 3.0)

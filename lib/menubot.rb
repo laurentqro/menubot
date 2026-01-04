@@ -131,14 +131,32 @@ module Menubot
 
   def self.holidays
     [
+      # Vacances de Noël (19 déc 2025 - 5 jan 2026)
+      "19 décembre", "20 décembre", "21 décembre", "22 décembre", "23 décembre",
+      "24 décembre", "25 décembre", "26 décembre", "27 décembre", "28 décembre",
+      "29 décembre", "30 décembre", "31 décembre",
+      "1 janvier", "2 janvier", "3 janvier", "4 janvier", "5 janvier",
+
+      # Vacances d'hiver (13 fév - 2 mar 2026)
+      "13 février", "14 février", "15 février", "16 février", "17 février",
+      "18 février", "19 février", "20 février", "21 février", "22 février",
+      "23 février", "24 février", "25 février", "26 février", "27 février",
+      "28 février", "1 mars", "2 mars",
+
+      # Lundi de Pâques
+      "6 avril",
+
+      # Vacances de printemps (10-27 avril 2026)
+      "10 avril", "11 avril", "12 avril", "13 avril", "14 avril",
+      "15 avril", "16 avril", "17 avril", "18 avril", "19 avril",
+      "20 avril", "21 avril", "22 avril", "23 avril", "24 avril",
+      "25 avril", "26 avril", "27 avril",
+
+      # Fête du travail
       "1 mai",
-      "22 mai",
-      "23 mai",
-      "29 mai",
-      "9 juin",
-      "19 juin",
-      "20 juin",
-      "15 août"
+
+      # Fête-Dieu & Grand Prix F1 (3-8 juin 2026)
+      "3 juin", "4 juin", "5 juin", "6 juin", "7 juin", "8 juin"
     ]
   end
 end
