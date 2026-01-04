@@ -7,6 +7,8 @@ require 'date'
 require "i18n"
 require "mailgun-ruby"
 require "ruby_llm"
+require "nokogiri"
+require "open-uri"
 
 require_relative "menubot/version"
 require_relative "tracker"
@@ -59,14 +61,35 @@ module Menubot
     raise Menubot::Error, "Menubot has already run today" if Menubot::Tracker.already_run_today?  
     raise Menubot::Error, "Nursery is closed today"       if Menubot.nursery_closed_today?
 
-    todays_date = I18n.l(Date.today, format: :long, locale: :fr)
+    Menubot.fetch_latest_menu
+
+    todays_date = I18n.l(Date.parse("2025-12-05"), format: :long, locale: :fr)
 
     send_email(
-      subject: "🍽️ Menu pour le #{todays_date}",
+      subject: "🍽️ Menu du #{todays_date} (Parc, Carmes et Stella)",
       body: Menubot.get_menu_of_the_day(todays_date)
     )
 
     Menubot::Tracker.mark_run
+  end
+
+  def self.fetch_latest_menu
+    base_url = "https://ecole-carmes.gouv.mc"
+    page_url = "#{base_url}/vie-de-l-etablissement/menus-du-restaurant-scolaire"
+
+    doc = Nokogiri::HTML(URI.open(page_url))
+    pdf_link = doc.css('a[href*=".pdf"]').first
+
+    return false unless pdf_link
+
+    pdf_url = "#{base_url}#{pdf_link['href']}"
+    pdf_content = URI.open(pdf_url).read
+
+    File.binwrite("data/menus.pdf", pdf_content)
+    true
+  rescue StandardError => e
+    warn "Failed to fetch menu: #{e.message}"
+    false
   end
 
   # private
