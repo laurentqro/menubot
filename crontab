@@ -1,0 +1,3 @@
+# Menubot cron schedule
+# Runs at 7:00 AM Paris time, Monday-Friday
+0 7 * * 1-5 /app/bin/menubot run

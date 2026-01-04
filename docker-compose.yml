@@ -3,5 +3,8 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      - TZ=Europe/Paris
     volumes:
       - ./data:/app/data
+    restart: unless-stopped
