@@ -14,7 +14,7 @@ require_relative "tracker"
 RubyLLM.configure do |config|
   config.openai_api_key = ENV.fetch("OPENAI_API_KEY", nil)
   config.anthropic_api_key = ENV.fetch("ANTHROPIC_API_KEY", nil)
-  config.default_model = "claude-3-7-sonnet"
+  config.default_model = "claude-sonnet-4-5-20250929"
 end
 
 # Add this configuration for French locale
@@ -73,31 +73,27 @@ module Menubot
 
   def self.get_menu_of_the_day(date_in_words)
     prompt = <<~PROMPT
-      Le texte ci-joint provient d'un PDF qui inclut les menus pour chaque jour de la semaine.
+      Extrais le menu du déjeuner pour le #{date_in_words}.
 
-      Le PDF contient une page par semaine du mois. Sur chaque page, les menus sont séparés verticalement par des en-têtes de section. Chaque colonne contient le menu pour un jour de la semaine.
-      Chaque en-tête de section est le jour de la semaine, écrit en majuscules et en gras.
+      Formate la réponse exactement comme suit, avec les emojis en début de section :
 
-      Les en-têtes horizontaux sont les repas de la journée : "COLLATION DU MATIN", "DEJEUNER", "COLLATION DE L'APRES-MIDI".
+      🥗 ENTRÉE
+      [entrée du jour]
 
-      Je souhaite extraire le menu pour une date précise.
+      🍽️ PLAT
+      [plat principal]
+      [accompagnement]
 
-      Par exemple, si nous sommes le mercredi 3 novembre 2024, vas voir la page 1 du PDF (car c'est la semaine 1 du mois), trouve l'en-tête de section "MERCREDI" et copie le contenu du menu pour ce jour.
+      🧀 FROMAGE
+      [fromage ou laitage]
 
-      La date d'aujourd'hui est "#{date_in_words}", et j'ai besoin du détail pour la collation du matin, le déjeuner et la collation de l'après-midi pour cette date.
-
-      Merci d'illustrer chaque en-tête de section avec un emoji correspondant :
-
-      - 🥖 pour la collation du matin
-      - 🍽️ pour le déjeuner
-      - 🍎 pour les collation de l'après-midi
-
-      Merci de me donner le menu du jour, en veillant bien de séparer chaque section (collation du matin, déjeuner, collation de l'après-midi). Fournis uniquement les éléments pertinents pour le #{date_in_words}.
+      🍰 DESSERT
+      [dessert]
     PROMPT
 
     chat = RubyLLM.chat.with_temperature(0.0)
-    chat.with_instructions("Tu es un assistant qui extrait le menu du jour à partir d'un PDF. Ne réponds pas à la question, juste retourne le menu. Formatte le menu en texte, pas en markdown.")
-    response = chat.ask(prompt, with: { pdf: "data/menus.pdf" })
+    chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté, sans commentaire.")
+    response = chat.ask(prompt, with: "data/menus.pdf")
     response.content
   end
 
