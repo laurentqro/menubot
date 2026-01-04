@@ -64,8 +64,8 @@ module Menubot
 
     fetch_latest_menu
 
-    todays_date = I18n.l(Date.today, format: :long, locale: :fr)
-    menu = get_menu_of_the_day(todays_date)
+    today = Date.today
+    menu = get_menu_of_the_day(today)
 
     body = if menu.include?("MENU_NOT_FOUND")
              Config.not_available_message
@@ -73,11 +73,34 @@ module Menubot
              menu
            end
 
+    todays_date = I18n.l(today, format: :long, locale: :fr)
     subject = Config.email_subject_template % { date: todays_date, school_name: Config.school_name }
 
     send_email(subject: subject, body: body)
 
     Menubot::Tracker.mark_run
+  end
+
+  def self.preview(date: Date.today)
+    fetch_latest_menu
+
+    date_str = I18n.l(date, format: :long, locale: :fr)
+    short_date = date.strftime("%d/%m")
+    prompt = build_prompt(date_str, short_date)
+    menu = get_menu_of_the_day(date)
+
+    result = if menu.include?("MENU_NOT_FOUND")
+               Config.not_available_message
+             else
+               menu
+             end
+
+    <<~OUTPUT
+      === PROMPT ===
+      #{prompt}
+      === RESPONSE ===
+      #{result}
+    OUTPUT
   end
 
   def self.fetch_latest_menu
@@ -98,9 +121,12 @@ module Menubot
 
   # private
 
-  def self.get_menu_of_the_day(date_in_words)
-    prompt = <<~PROMPT
+  def self.build_prompt(date_in_words, short_date)
+    <<~PROMPT
       Extrais le menu du déjeuner pour le #{date_in_words}.
+
+      IMPORTANT: Dans ce PDF, les dates apparaissent au format JJ/MM (exemple: #{short_date}).
+      Cherche la date #{short_date} dans le document.
 
       Si le menu pour cette date n'est pas dans le PDF, réponds exactement : "MENU_NOT_FOUND"
 
@@ -119,6 +145,12 @@ module Menubot
       🍰 DESSERT
       [dessert]
     PROMPT
+  end
+
+  def self.get_menu_of_the_day(date)
+    date_in_words = I18n.l(date, format: :long, locale: :fr)
+    short_date = date.strftime("%d/%m")
+    prompt = build_prompt(date_in_words, short_date)
 
     chat = RubyLLM.chat.with_temperature(0.0)
     chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté ou MENU_NOT_FOUND si la date n'est pas présente.")

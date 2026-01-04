@@ -1,5 +1,78 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
+require "bundler/setup"
+require "optparse"
 require_relative "../lib/menubot"
 
-Menubot.run
+options = {}
+command = ARGV.shift
+
+case command
+when "preview"
+  OptionParser.new do |opts|
+    opts.banner = "Usage: menubot preview [options]"
+    opts.on("-d", "--date DATE", "Date to preview (YYYY-MM-DD)") do |d|
+      options[:date] = Date.parse(d)
+    end
+    opts.on("-h", "--help", "Show help") do
+      puts opts
+      exit
+    end
+  end.parse!
+
+  date = options[:date] || Date.today
+  puts Menubot.preview(date: date)
+
+when "run"
+  OptionParser.new do |opts|
+    opts.banner = "Usage: menubot run"
+    opts.on("-h", "--help", "Show help") do
+      puts opts
+      exit
+    end
+  end.parse!
+
+  Menubot.run
+  puts "Email sent successfully!"
+
+when "fetch"
+  OptionParser.new do |opts|
+    opts.banner = "Usage: menubot fetch"
+    opts.on("-h", "--help", "Show help") do
+      puts opts
+      exit
+    end
+  end.parse!
+
+  if Menubot.fetch_latest_menu
+    puts "Menu PDF fetched successfully!"
+  else
+    puts "Failed to fetch menu PDF"
+    exit 1
+  end
+
+when "-h", "--help", "help", nil
+  puts <<~HELP
+    Menubot - Daily school menu notifier
+
+    Commands:
+      preview    Preview menu for a date (default: today)
+      run        Send today's menu email
+      fetch      Download latest menu PDF
+
+    Examples:
+      menubot preview                    # Preview today's menu
+      menubot preview --date 2025-12-05  # Preview specific date
+      menubot run                        # Send email
+      menubot fetch                      # Just fetch PDF
+
+    Options:
+      -h, --help    Show this help
+  HELP
+
+else
+  puts "Unknown command: #{command}"
+  puts "Run 'menubot --help' for usage"
+  exit 1
+end
