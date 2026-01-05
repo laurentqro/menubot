@@ -161,7 +161,7 @@ module Menubot
     prompt = build_prompt(date_in_words, short_date)
 
     chat = RubyLLM.chat.with_temperature(0.0)
-    chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Retourne uniquement le menu formaté ou MENU_NOT_FOUND si la date n'est pas présente.")
+    chat.with_instructions("Tu extrais le menu du jour à partir du PDF. Réponds UNIQUEMENT avec le menu formaté ou MENU_NOT_FOUND. Pas de commentaire, pas d'explication, pas de phrase d'introduction.")
     response = chat.ask(prompt, with: pdf_path)
     menu = response.content
 
