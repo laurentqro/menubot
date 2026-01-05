@@ -22,6 +22,7 @@ GEM
     connection_pool (3.0.2)
     csv (3.3.5)
     diff-lcs (1.6.2)
+    dotenv (3.2.0)
     drb (2.2.3)
     event_stream_parser (1.0.0)
     faraday (2.14.0)
@@ -109,6 +110,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
+  dotenv
   httparty
   i18n
   mailgun-ruby

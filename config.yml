@@ -13,7 +13,7 @@ email:
     Nous réessaierons demain !
 
 llm:
-  model: "claude-sonnet-4-5-20250929"
+  model: "claude-sonnet-4-5"
 
 mailgun:
   region: "api.eu.mailgun.net"
