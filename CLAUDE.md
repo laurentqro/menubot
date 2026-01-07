@@ -54,12 +54,19 @@ The codebase follows a simple module-based structure:
 3. Cache stores extracted menu text (keyed by `MD5(pdf)_YYYY-MM-DD`)
 4. `run` sends email via Mailgun, marks run complete in tracker
 
+### Skip Logic
+
+`nursery_closed_today?` prevents emails on:
+- Weekends (Saturday/Sunday)
+- Holidays (configured in `config.yml`)
+- Wednesdays (no lunch served)
+
 ### Key Dependencies
 
 - **ruby_llm**: AI model abstraction (Claude/OpenAI)
 - **mailgun-ruby**: Email delivery
 - **nokogiri**: HTML parsing for PDF link scraping
-- **activesupport**: Date extensions (`saturday?`, `sunday?`)
+- **activesupport**: Date extensions (`saturday?`, `sunday?`, `wednesday?`)
 
 ## Configuration
 

@@ -8,7 +8,7 @@ Daily school menu notifier for Monaco nurseries. Fetches the weekly menu PDF fro
 - AI-powered menu extraction (Claude)
 - Email delivery via Mailgun
 - Menu caching (avoids repeated API calls)
-- Holiday and weekend detection
+- Holiday, weekend, and Wednesday detection (no lunch on Wednesdays)
 - Docker-based scheduling
 
 ## Quick Start
@@ -56,7 +56,7 @@ bin/menubot --help
 The recommended way to run menubot in production:
 
 ```bash
-# Start (runs daily at 7 AM Paris time, Mon-Fri)
+# Start (runs daily at 7 AM Paris time, Mon-Tue, Thu-Fri)
 docker compose up -d
 
 # Watch logs
@@ -90,7 +90,7 @@ Edit `config.yml` to customize:
 bundle install
 
 # Run tests
-bundle exec ruby -Ilib:test -e "Dir.glob('test/**/*_test.rb').each { |f| require File.expand_path(f) }"
+bundle exec rake
 
 # Build Docker image
 docker compose build
