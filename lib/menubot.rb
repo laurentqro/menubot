@@ -186,7 +186,11 @@ module Menubot
   end
 
   def self.nursery_closed_today?
-    weekend? || holiday?
+    weekend? || holiday? || no_lunch_day?
+  end
+
+  def self.no_lunch_day?
+    Date.today.wednesday?
   end
 
   def self.holiday?

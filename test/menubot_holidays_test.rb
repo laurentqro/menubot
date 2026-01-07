@@ -92,4 +92,22 @@ class MenubotHolidaysTest < Minitest::Test
       refute Menubot.nursery_closed_today?
     end
   end
+
+  def test_no_lunch_day_returns_true_for_wednesday
+    Date.stub :today, Date.new(2026, 1, 7) do # Wednesday
+      assert Menubot.no_lunch_day?
+    end
+  end
+
+  def test_no_lunch_day_returns_false_for_other_days
+    Date.stub :today, Date.new(2026, 1, 6) do # Tuesday
+      refute Menubot.no_lunch_day?
+    end
+  end
+
+  def test_nursery_closed_on_wednesday
+    Date.stub :today, Date.new(2026, 1, 7) do # Wednesday
+      assert Menubot.nursery_closed_today?
+    end
+  end
 end
